@@ -219,6 +219,10 @@ export default function AdminDashboard() {
   const [dataLoading, setDataLoading] = useState(false);
   const [toast, setToast]           = useState(null);         // { message, type }
   const [deleteId, setDeleteId]     = useState(null);         // confirm-delete modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addName, setAddName] = useState("");
+  const [addPrice, setAddPrice] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
 
   const showToast = useCallback((message, type = "success") => {
     setToast({ message, type });
@@ -301,18 +305,38 @@ export default function AdminDashboard() {
     [showToast]
   );
 
-  // ── Add a new blank product ──────────────────────────────────────────────────
-  const handleAddRow = async () => {
+  // ── Add Product Modal ────────────────────────────────────────────────────────
+  const openAddModal = () => {
+    setAddName("");
+    setAddPrice("");
+    setShowAddModal(true);
+  };
+
+  const handleAddProduct = async (e) => {
+    e.preventDefault();
+    const priceVal = parseFloat(addPrice);
+    if (!addName.trim()) {
+      showToast("Product name is required.", "error");
+      return;
+    }
+    if (isNaN(priceVal) || priceVal < 0) {
+      showToast("Price must be a non-negative number.", "error");
+      return;
+    }
+    setAddLoading(true);
     try {
       await addDoc(collection(db, "products"), {
-        name:      "New Product",
-        price:     0,
+        name:      addName.trim(),
+        price:     priceVal,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      showToast("New product added.", "info");
+      showToast(`"${addName.trim()}" added.`, "success");
+      setShowAddModal(false);
     } catch (err) {
       showToast("Could not add product: " + err.message, "error");
+    } finally {
+      setAddLoading(false);
     }
   };
 
@@ -459,6 +483,21 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* Add Product button */}
+          {isAdmin && (
+            <div className="flex justify-end">
+              <button
+                onClick={openAddModal}
+                className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors duration-150"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                Add Product
+              </button>
+            </div>
+          )}
+
           {/* Stats row */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[
@@ -516,9 +555,7 @@ export default function AdminDashboard() {
                 pageSizeOptions={[10, 25, 50]}
                 initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
                 slots={{
-                  toolbar: () => (
-                    <AdminToolbar isAdmin={isAdmin} onAddRow={handleAddRow} />
-                  ),
+                  toolbar: () => <AdminToolbar isAdmin={isAdmin} onAddRow={openAddModal} />,
                 }}
                 slotProps={{
                   loadingOverlay: { variant: "skeleton", noRowsVariant: "skeleton" },
@@ -561,6 +598,67 @@ export default function AdminDashboard() {
                   Delete
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Add Product Modal ── */}
+        {showAddModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">Add Product</h3>
+                  <p className="text-xs text-slate-500">Enter the product details below.</p>
+                </div>
+              </div>
+              <form onSubmit={handleAddProduct} className="space-y-4">
+                <div>
+                  <label className="block font-mono text-xs text-slate-400 mb-1.5 uppercase tracking-widest">Product Name</label>
+                  <input
+                    type="text"
+                    value={addName}
+                    onChange={(e) => setAddName(e.target.value)}
+                    required
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 font-mono text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
+                    placeholder="e.g. Widget Pro"
+                  />
+                </div>
+                <div>
+                  <label className="block font-mono text-xs text-slate-400 mb-1.5 uppercase tracking-widest">Price (USD)</label>
+                  <input
+                    type="number"
+                    value={addPrice}
+                    onChange={(e) => setAddPrice(e.target.value)}
+                    min="0"
+                    step="0.01"
+                    required
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 font-mono text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="flex gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold py-2 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={addLoading}
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/40 text-slate-900 text-xs font-semibold py-2 rounded-lg transition-colors"
+                  >
+                    {addLoading ? "Adding…" : "Add Product"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
