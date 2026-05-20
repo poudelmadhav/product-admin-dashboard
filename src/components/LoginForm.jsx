@@ -20,6 +20,10 @@ const ERROR_MESSAGES = {
   "auth/email-already-in-use": "An account with this email already exists.",
   "auth/weak-password": "Password should be at least 6 characters.",
   "auth/operation-not-allowed": "This sign-in method is not enabled.",
+  "auth/unauthorized-domain":
+    "This domain is not authorized. Add it in Firebase Console → Authentication → Settings.",
+  "auth/popup-blocked":
+    "Popup was blocked by your browser. Allow popups for this site.",
   default: "Something went wrong. Please try again.",
 };
 
