@@ -1,0 +1,48 @@
+// firestore.rules
+// Deploy via: firebase deploy --only firestore:rules
+// Or paste directly into the Firebase Console → Firestore → Rules tab.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper Functions ──────────────────────────────────────────────────────
+
+    // Returns true if the requester is signed in.
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Returns the caller's user document from the 'users' collection.
+    function callerUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Returns true only when the caller's Firestore user doc has role == "admin".
+    // This is the critical server-side check — client-side role state is never trusted.
+    function isAdmin() {
+      return isAuthenticated() && callerUserDoc().role == "admin";
+    }
+
+    // ── Users Collection ──────────────────────────────────────────────────────
+    // Users can read/write only their own document.
+    // Admins can read any user document (needed for role look-ups).
+    match /users/{userId} {
+      allow read:  if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ── Products Collection ───────────────────────────────────────────────────
+    // Any authenticated user can READ products.
+    // Only admins (role == "admin" in their users/{uid} doc) can CREATE, UPDATE, or DELETE.
+    match /products/{productId} {
+      allow read:   if isAuthenticated();
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+                    // Prevent clients from changing the document ID field.
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["id"]);
+      allow delete: if isAdmin();
+    }
+  }
+}
