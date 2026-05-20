@@ -217,6 +217,7 @@ export default function AdminDashboard() {
   const [authLoading, setAuthLoading] = useState(true);
   const [products, setProducts]     = useState([]);
   const [dataLoading, setDataLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast]           = useState(null);         // { message, type }
   const [deleteId, setDeleteId]     = useState(null);         // confirm-delete modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -533,6 +534,20 @@ export default function AdminDashboard() {
             ))}
           </div>
 
+          {/* Search */}
+          <div className="relative">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search products by name…"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 font-mono text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
+            />
+          </div>
+
           {/* Data Grid */}
           <div className="rounded-xl overflow-hidden border border-slate-700/60 shadow-2xl">
             {/* Admin hint */}
@@ -545,7 +560,11 @@ export default function AdminDashboard() {
 
             <div style={{ height: 520 }}>
               <DataGrid
-                rows={products}
+                rows={searchQuery
+                  ? products.filter((p) =>
+                      p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                  : products}
                 columns={columns}
                 loading={dataLoading}
                 editMode="cell"
