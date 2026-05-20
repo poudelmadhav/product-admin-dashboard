@@ -7,6 +7,26 @@ import {
 import { logEvent } from "firebase/analytics";
 import { auth, analytics } from "../firebase";
 
+const ERROR_MESSAGES = {
+  "auth/invalid-email": "Enter a valid email address.",
+  "auth/user-disabled": "This account has been disabled.",
+  "auth/user-not-found": "No account found with this email.",
+  "auth/wrong-password": "Incorrect password. Try again.",
+  "auth/invalid-credential": "Invalid email or password.",
+  "auth/too-many-requests":
+    "Too many failed attempts. Try again later.",
+  "auth/network-request-failed":
+    "Network error. Check your connection.",
+  "auth/email-already-in-use": "An account with this email already exists.",
+  "auth/weak-password": "Password should be at least 6 characters.",
+  "auth/operation-not-allowed": "This sign-in method is not enabled.",
+  default: "Something went wrong. Please try again.",
+};
+
+function formatError(err) {
+  return ERROR_MESSAGES[err.code] || ERROR_MESSAGES.default;
+}
+
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,11 +42,7 @@ export default function LoginForm() {
       await signInWithEmailAndPassword(auth, email, password);
       logEvent(analytics, "login", { method: "email" });
     } catch (err) {
-      setError(
-        err.message
-          .replace("Firebase: ", "")
-          .replace(/ \(auth\/.*\)\.?/, "")
-      );
+      setError(formatError(err));
     } finally {
       setLoading(false);
     }
@@ -44,11 +60,7 @@ export default function LoginForm() {
         err.code !== "auth/cancelled-popup-request" &&
         err.code !== "auth/popup-closed-by-user"
       ) {
-        setError(
-          err.message
-            .replace("Firebase: ", "")
-            .replace(/ \(auth\/.*\)\.?/, "")
-        );
+        setError(formatError(err));
       }
     } finally {
       setGoogleLoading(false);
