@@ -27,7 +27,8 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { auth, db } from "./firebase";
+import { auth, db, analytics } from "./firebase";
+import { logEvent } from "firebase/analytics";
 import { getDoc } from "firebase/firestore";
 
 // ─── MUI dark theme tuned to match the dashboard palette ──────────────────────
@@ -123,6 +124,7 @@ function LoginForm() {
     setError("");
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      logEvent(analytics, "login", { method: "email" });
     } catch (err) {
       setError(err.message.replace("Firebase: ", "").replace(/ \(auth\/.*\)\.?/, ""));
     } finally {
@@ -136,6 +138,7 @@ function LoginForm() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
+      logEvent(analytics, "login", { method: "google" });
     } catch (err) {
       if (err.code !== "auth/cancelled-popup-request" && err.code !== "auth/popup-closed-by-user") {
         setError(err.message.replace("Firebase: ", "").replace(/ \(auth\/.*\)\.?/, ""));
@@ -289,6 +292,16 @@ export default function AdminDashboard() {
     return () => unsubAuth();
   }, []);
 
+  // ── Page view analytics ───────────────────────────────────────────────────────
+  useEffect(() => {
+    if (user && !authLoading) {
+      logEvent(analytics, "page_view", {
+        page_title: "Admin Dashboard",
+        page_location: window.location.href,
+      });
+    }
+  }, [user, authLoading]);
+
   // ── Realtime products listener ───────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
@@ -331,6 +344,10 @@ export default function AdminDashboard() {
           price:     priceVal,
           updatedAt: serverTimestamp(),
         });
+        logEvent(analytics, "update_product", {
+          product_id: newRow.firestoreId,
+          product_name: newRow.name.trim(),
+        });
         showToast(`"${newRow.name}" saved.`, "success");
         return { ...newRow, price: priceVal };
       } catch (err) {
@@ -366,11 +383,16 @@ export default function AdminDashboard() {
     }
     setAddLoading(true);
     try {
-      await addDoc(collection(db, "products"), {
+      const docRef = await addDoc(collection(db, "products"), {
         name:      addName.trim(),
         price:     priceVal,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+      });
+      logEvent(analytics, "add_product", {
+        product_id: docRef.id,
+        product_name: addName.trim(),
+        product_price: priceVal,
       });
       showToast(`"${addName.trim()}" added.`, "success");
       setShowAddModal(false);
@@ -384,8 +406,13 @@ export default function AdminDashboard() {
   // ── Delete a product ─────────────────────────────────────────────────────────
   const handleDeleteConfirmed = async () => {
     if (!deleteId) return;
+    const deleted = products.find((p) => p.firestoreId === deleteId);
     try {
       await deleteDoc(doc(db, "products", deleteId));
+      logEvent(analytics, "delete_product", {
+        product_id: deleteId,
+        product_name: deleted?.name ?? "unknown",
+      });
       showToast("Product deleted.", "info");
     } catch (err) {
       showToast("Delete failed: " + err.message, "error");
@@ -497,7 +524,7 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-4">
               <span className="text-xs text-slate-500 hidden sm:block">{user.email}</span>
               <button
-                onClick={() => signOut(auth)}
+                onClick={() => { logEvent(analytics, "logout"); signOut(auth); }}
                 className="text-xs text-slate-500 hover:text-slate-200 transition-colors duration-150 flex items-center gap-1.5"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
