@@ -6,6 +6,8 @@ import { ThemeProvider } from "@mui/material/styles";
 import {
   doc,
   getDoc,
+  setDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import {
   signOut,
@@ -43,8 +45,19 @@ export default function AdminDashboard() {
       setUser(firebaseUser);
       if (firebaseUser) {
         try {
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-          setIsAdmin(userDoc.exists() && userDoc.data().role === "admin");
+          const userRef = doc(db, "users", firebaseUser.uid);
+          await setDoc(
+            userRef,
+            {
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName || null,
+              photoURL: firebaseUser.photoURL || null,
+              lastLogin: serverTimestamp(),
+            },
+            { merge: true }
+          );
+          const userDoc = await getDoc(userRef);
+          setIsAdmin(userDoc.data()?.role === "admin");
         } catch {
           setIsAdmin(false);
         }
@@ -203,9 +216,18 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex items-center gap-4">
-              <span className="text-xs text-slate-500 hidden sm:block">
-                {user.email}
-              </span>
+              <div className="flex items-center gap-2.5">
+                {user.photoURL && (
+                  <img
+                    src={user.photoURL}
+                    alt=""
+                    className="w-7 h-7 rounded-full ring-2 ring-slate-700"
+                  />
+                )}
+                <span className="text-xs text-slate-300 hidden sm:block">
+                  {user.displayName || user.email}
+                </span>
+              </div>
               <button
                 onClick={() => {
                   logEvent(analytics, "logout");
