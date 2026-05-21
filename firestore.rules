@@ -26,11 +26,16 @@ service cloud.firestore {
     }
 
     // ── Users Collection ──────────────────────────────────────────────────────
-    // Users can read/write only their own document.
-    // Admins can read any user document (needed for role look-ups).
+    // Users can read their own document; admins can read any user doc (for role
+    // look-ups).  Users can create and update their own doc, but the `role` field
+    // is never writable from the client — manage roles and deletes in the Firebase
+    // Console or via a trusted admin backend.
     match /users/{userId} {
-      allow read:  if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAuthenticated() && request.auth.uid == userId;
+      allow read:   if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated()
+                     && request.auth.uid == userId
+                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["role"]);
     }
 
     // ── Products Collection ───────────────────────────────────────────────────
