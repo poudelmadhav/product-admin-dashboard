@@ -25,6 +25,7 @@ export default function useProducts(user, showToast) {
           firestoreId: d.id,
           name: d.data().name ?? "",
           price: d.data().price ?? 0,
+          imageUrl: d.data().imageUrl ?? "",
         }));
         setProducts(rows);
         setDataLoading(false);
