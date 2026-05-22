@@ -3,7 +3,7 @@ import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-const UPLOAD_PRESET = "firebase-react-admin";
+const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 export default function ImageEditModal({ productId, currentImageUrl, onClose, showToast }) {
   const [imageFile, setImageFile] = useState(null);

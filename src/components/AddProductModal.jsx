@@ -4,7 +4,7 @@ import { logEvent } from "firebase/analytics";
 import { db, analytics } from "../firebase";
 
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-const UPLOAD_PRESET = "firebase-react-admin";
+const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 export default function AddProductModal({ open, onClose, onSuccess }) {
   const [name, setName] = useState("");
