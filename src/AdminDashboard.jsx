@@ -37,6 +37,7 @@ export default function AdminDashboard({ user, isAdmin }) {
 
   useEffect(() => {
     if (user) {
+      document.title = "Products Admin";
       logEvent(analytics, "page_view", {
         page_title: "Admin Dashboard",
         page_location: window.location.href,

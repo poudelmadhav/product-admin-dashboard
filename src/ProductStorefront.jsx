@@ -41,6 +41,7 @@ export default function ProductStorefront({ user }) {
   const { products, dataLoading } = useProductList(user, showToast);
 
   useEffect(() => {
+    document.title = "Product Store";
     logEvent(analytics, "page_view", {
       page_title: "Product Storefront",
       page_location: window.location.href,

@@ -1,6 +1,11 @@
 import LoginForm from "./LoginForm";
+import { useEffect } from "react";
 
 export default function AuthGate({ authLoading, user, title, children }) {
+  useEffect(() => {
+    if (title) document.title = title;
+  }, [title]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
