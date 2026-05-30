@@ -195,7 +195,7 @@ export default function AddProductModal({ open, onClose, onSuccess }) {
           </div>
           <div>
             <label className="block font-mono text-xs text-slate-400 mb-1.5 uppercase tracking-widest">
-              Price Per Stock (USD)
+              Price Per Stock (Rs.)
             </label>
             <input
               type="number"

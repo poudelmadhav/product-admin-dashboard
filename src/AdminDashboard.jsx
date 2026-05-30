@@ -1,22 +1,15 @@
 import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import {
   DataGrid,
 } from "@mui/x-data-grid";
 import { ThemeProvider } from "@mui/material/styles";
 import {
-  doc,
-  getDoc,
-  setDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import {
   signOut,
-  onAuthStateChanged,
 } from "firebase/auth";
 import { logEvent } from "firebase/analytics";
-import { auth, db, analytics } from "./firebase";
+import { auth, analytics } from "./firebase";
 import muiTheme from "./theme";
-import LoginForm from "./components/LoginForm";
 import Toast from "./components/Toast";
 import AdminToolbar from "./components/AdminToolbar";
 import AddProductModal from "./components/AddProductModal";
@@ -25,11 +18,9 @@ import ImageEditModal from "./components/ImageEditModal";
 import ImageLightbox from "./components/ImageLightbox";
 import StatsCards from "./components/StatsCards";
 import useProducts from "./hooks/useProducts";
+import { formatRupees } from "./utils/currency";
 
-export default function AdminDashboard() {
-  const [user, setUser] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
+export default function AdminDashboard({ user, isAdmin }) {
   const [toast, setToast] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -45,42 +36,14 @@ export default function AdminDashboard() {
     useProducts(user, showToast);
 
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        try {
-          const userRef = doc(db, "users", firebaseUser.uid);
-          await setDoc(
-            userRef,
-            {
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName || null,
-              photoURL: firebaseUser.photoURL || null,
-              lastLogin: serverTimestamp(),
-            },
-            { merge: true }
-          );
-          const userDoc = await getDoc(userRef);
-          setIsAdmin(userDoc.data()?.role === "admin");
-        } catch {
-          setIsAdmin(false);
-        }
-      } else {
-        setIsAdmin(false);
-      }
-      setAuthLoading(false);
-    });
-    return () => unsubAuth();
-  }, []);
-
-  useEffect(() => {
-    if (user && !authLoading) {
+    if (user) {
+      document.title = "Products Admin";
       logEvent(analytics, "page_view", {
         page_title: "Admin Dashboard",
         page_location: window.location.href,
       });
     }
-  }, [user, authLoading]);
+  }, [user]);
 
   const handleProcessRowUpdateError = useCallback(
     (err) => showToast("Update error: " + err.message, "error"),
@@ -170,19 +133,14 @@ export default function AdminDashboard() {
     },
     {
       field: "price",
-      headerName: "Price Per Stock (USD)",
+      headerName: "Price Per Stock (Rs.)",
       flex: 0.8,
       minWidth: 130,
       editable: isAdmin,
       type: "number",
       cellClassName: isAdmin ? "editable-cell" : "",
       valueFormatter: (value) =>
-        value != null
-          ? new Intl.NumberFormat("en-US", {
-              style: "currency",
-              currency: "USD",
-            }).format(value)
-          : "—",
+        value != null ? formatRupees(value) : "—",
     },
     {
       field: "totalStocks",
@@ -230,26 +188,13 @@ export default function AdminDashboard() {
       : []),
   ];
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-          <p className="font-mono text-xs text-slate-500">Authenticating…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) return <LoginForm />;
-
   return (
     <ThemeProvider theme={muiTheme}>
       <div className="min-h-screen bg-slate-900 text-slate-100 font-mono">
         <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+          <div className="max-w-7xl mx-auto px-5 sm:px-6 py-3 sm:h-14 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
                 <svg
                   className="w-4 h-4 text-emerald-400"
                   fill="none"
@@ -264,7 +209,7 @@ export default function AdminDashboard() {
                   />
                 </svg>
               </div>
-              <span className="text-sm font-bold tracking-tight text-slate-100">
+              <span className="text-sm font-bold tracking-tight text-slate-100 truncate">
                 Products Admin
               </span>
               <span
@@ -278,8 +223,14 @@ export default function AdminDashboard() {
               </span>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full sm:w-auto">
+              <Link
+                to="/"
+                className="text-xs text-slate-500 hover:text-emerald-400 transition-colors duration-150 shrink-0"
+              >
+                Storefront
+              </Link>
+              <div className="hidden sm:flex items-center gap-2.5 min-w-0">
                 {user.photoURL && (
                   <img
                     src={user.photoURL}
@@ -287,7 +238,7 @@ export default function AdminDashboard() {
                     className="w-7 h-7 rounded-full ring-2 ring-slate-700"
                   />
                 )}
-                <span className="text-xs text-slate-300 hidden sm:block">
+                <span className="text-xs text-slate-300 truncate max-w-48">
                   {user.displayName || user.email}
                 </span>
               </div>
@@ -296,7 +247,7 @@ export default function AdminDashboard() {
                   logEvent(analytics, "logout");
                   signOut(auth);
                 }}
-                className="text-xs text-slate-500 hover:text-slate-200 transition-colors duration-150 flex items-center gap-1.5"
+                className="text-xs text-slate-500 hover:text-slate-200 transition-colors duration-150 flex items-center gap-1.5 shrink-0"
               >
                 <svg
                   className="w-3.5 h-3.5"

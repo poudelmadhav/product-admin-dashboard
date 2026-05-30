@@ -31,7 +31,7 @@ function formatError(err) {
   return ERROR_MESSAGES[err.code] || ERROR_MESSAGES.default;
 }
 
-export default function LoginForm() {
+export default function LoginForm({ title = "Products Portal" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -91,7 +91,7 @@ export default function LoginForm() {
             </svg>
           </div>
           <h1 className="font-mono text-xl font-bold text-slate-100 tracking-tight">
-            Admin Portal
+            {title}
           </h1>
           <p className="font-mono text-xs text-slate-500 mt-1">
             Sign in to continue

@@ -1,3 +1,5 @@
+import { formatRupees } from "../utils/currency";
+
 const stats = [
   {
     label: "Total Products",
@@ -21,10 +23,7 @@ export default function StatsCards({ products, isAdmin }) {
     total: products.length,
     avgPrice:
       products.length > 0
-        ? new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD",
-          }).format(
+        ? formatRupees(
             products.reduce((s, p) => s + p.price, 0) / products.length
           )
         : "—",
