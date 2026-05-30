@@ -121,32 +121,21 @@ export default function AdminDashboard() {
       cellClassName: isAdmin ? "editable-cell" : "",
     },
     {
-      field: "price",
-      headerName: "Price (USD)",
-      flex: 0.8,
-      minWidth: 130,
-      editable: isAdmin,
-      type: "number",
-      cellClassName: isAdmin ? "editable-cell" : "",
-      valueFormatter: (value) =>
-        value != null
-          ? new Intl.NumberFormat("en-US", {
-              style: "currency",
-              currency: "USD",
-            }).format(value)
-          : "—",
-    },
-    {
       field: "imageUrl",
       headerName: "Image",
-      width: 80,
+      width: 110,
       editable: false,
       sortable: false,
       filterable: false,
       disableColumnMenu: true,
+      headerAlign: "center",
+      align: "center",
+      cellClassName: isAdmin
+        ? "column-accent-cell image-cell"
+        : "image-cell",
       renderCell: (params) =>
         params.value ? (
-          <div className="flex items-center gap-1 h-full w-full">
+          <div className="flex items-center justify-center gap-1 h-full w-full">
             <img
               src={params.value}
               alt=""
@@ -166,16 +155,45 @@ export default function AdminDashboard() {
             )}
           </div>
         ) : isAdmin ? (
-          <button
-            onClick={() => setEditImageId(params.row.firestoreId)}
-            className="text-slate-600 hover:text-emerald-400 transition-colors text-xs"
-            title="Add image"
-          >
-            + Add
-          </button>
+          <div className="flex items-center justify-center h-full w-full">
+            <button
+              onClick={() => setEditImageId(params.row.firestoreId)}
+              className="text-slate-600 hover:text-emerald-400 transition-colors text-xs"
+              title="Add image"
+            >
+              + Add
+            </button>
+          </div>
         ) : (
           <span className="text-slate-600">{"\u2014"}</span>
         ),
+    },
+    {
+      field: "price",
+      headerName: "Price Per Stock (USD)",
+      flex: 0.8,
+      minWidth: 130,
+      editable: isAdmin,
+      type: "number",
+      cellClassName: isAdmin ? "editable-cell" : "",
+      valueFormatter: (value) =>
+        value != null
+          ? new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "USD",
+            }).format(value)
+          : "—",
+    },
+    {
+      field: "totalStocks",
+      headerName: "Total Stocks",
+      flex: 0.45,
+      minWidth: 105,
+      editable: isAdmin,
+      type: "number",
+      cellClassName: isAdmin ? "editable-cell" : "",
+      valueFormatter: (value) =>
+        value != null ? new Intl.NumberFormat("en-US").format(value) : "—",
     },
     ...(isAdmin
       ? [
@@ -408,7 +426,15 @@ export default function AdminDashboard() {
                     noRowsVariant: "skeleton",
                   },
                 }}
-                sx={{ border: "none" }}
+                sx={{
+                  border: "none",
+                  "& .column-accent-cell": {
+                    borderLeft: "2px solid #6ee7b7",
+                  },
+                  "& .image-cell": {
+                    justifyContent: "center",
+                  },
+                }}
               />
             </div>
           </div>

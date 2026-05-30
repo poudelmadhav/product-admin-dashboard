@@ -9,6 +9,7 @@ const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 export default function AddProductModal({ open, onClose, onSuccess }) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [totalStocks, setTotalStocks] = useState("");
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
@@ -54,12 +55,21 @@ export default function AddProductModal({ open, onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const priceVal = parseFloat(price);
+    const totalStocksVal = Number(totalStocks);
     if (!name.trim()) {
       onSuccess?.("Product name is required.", "error");
       return;
     }
     if (isNaN(priceVal) || priceVal < 0) {
       onSuccess?.("Price must be a non-negative number.", "error");
+      return;
+    }
+    if (
+      totalStocks.trim() === "" ||
+      !Number.isInteger(totalStocksVal) ||
+      totalStocksVal < 0
+    ) {
+      onSuccess?.("Total stocks must be a non-negative whole number.", "error");
       return;
     }
     setLoading(true);
@@ -72,6 +82,7 @@ export default function AddProductModal({ open, onClose, onSuccess }) {
       const docRef = await addDoc(collection(db, "products"), {
         name: name.trim(),
         price: priceVal,
+        totalStocks: totalStocksVal,
         imageUrl,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -80,10 +91,12 @@ export default function AddProductModal({ open, onClose, onSuccess }) {
         product_id: docRef.id,
         product_name: name.trim(),
         product_price: priceVal,
+        total_stocks: totalStocksVal,
       });
       onSuccess?.(`"${name.trim()}" added.`, "success");
       setName("");
       setPrice("");
+      setTotalStocks("");
       removeImage();
       onClose();
     } catch (err) {
@@ -135,21 +148,6 @@ export default function AddProductModal({ open, onClose, onSuccess }) {
           </div>
           <div>
             <label className="block font-mono text-xs text-slate-400 mb-1.5 uppercase tracking-widest">
-              Price (USD)
-            </label>
-            <input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              min="0"
-              step="0.01"
-              required
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 font-mono text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
-              placeholder="0.00"
-            />
-          </div>
-          <div>
-            <label className="block font-mono text-xs text-slate-400 mb-1.5 uppercase tracking-widest">
               Image
             </label>
             {imagePreview ? (
@@ -194,6 +192,36 @@ export default function AddProductModal({ open, onClose, onSuccess }) {
                 />
               </label>
             )}
+          </div>
+          <div>
+            <label className="block font-mono text-xs text-slate-400 mb-1.5 uppercase tracking-widest">
+              Price Per Stock (USD)
+            </label>
+            <input
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              min="0"
+              step="0.01"
+              required
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 font-mono text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label className="block font-mono text-xs text-slate-400 mb-1.5 uppercase tracking-widest">
+              Total Stocks
+            </label>
+            <input
+              type="number"
+              value={totalStocks}
+              onChange={(e) => setTotalStocks(e.target.value)}
+              min="0"
+              step="1"
+              required
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 font-mono text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
+              placeholder="0"
+            />
           </div>
           <div className="flex gap-3 pt-1">
             <button

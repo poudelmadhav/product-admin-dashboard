@@ -25,6 +25,7 @@ export default function useProducts(user, showToast) {
           firestoreId: d.id,
           name: d.data().name ?? "",
           price: d.data().price ?? 0,
+          totalStocks: d.data().totalStocks ?? 0,
           imageUrl: d.data().imageUrl ?? "",
         }));
         setProducts(rows);
@@ -39,18 +40,32 @@ export default function useProducts(user, showToast) {
   }, [user, showToast]);
 
   const updateProduct = async (newRow, oldRow) => {
-    if (newRow.name === oldRow.name && newRow.price === oldRow.price) {
+    if (
+      newRow.name === oldRow.name &&
+      newRow.price === oldRow.price &&
+      newRow.totalStocks === oldRow.totalStocks
+    ) {
       return oldRow;
     }
     const priceVal = parseFloat(newRow.price);
+    const totalStocksVal = Number(newRow.totalStocks);
     if (isNaN(priceVal) || priceVal < 0) {
       showToast("Price must be a non-negative number.", "error");
+      return oldRow;
+    }
+    if (
+      newRow.totalStocks === "" ||
+      !Number.isInteger(totalStocksVal) ||
+      totalStocksVal < 0
+    ) {
+      showToast("Total stocks must be a non-negative whole number.", "error");
       return oldRow;
     }
     try {
       await updateDoc(doc(db, "products", newRow.firestoreId), {
         name: newRow.name.trim(),
         price: priceVal,
+        totalStocks: totalStocksVal,
         updatedAt: serverTimestamp(),
       });
       logEvent(analytics, "update_product", {
@@ -58,7 +73,7 @@ export default function useProducts(user, showToast) {
         product_name: newRow.name.trim(),
       });
       showToast(`"${newRow.name}" saved.`, "success");
-      return { ...newRow, price: priceVal };
+      return { ...newRow, price: priceVal, totalStocks: totalStocksVal };
     } catch (err) {
       showToast("Save failed: " + err.message, "error");
       return oldRow;
